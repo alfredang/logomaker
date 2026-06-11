@@ -1,64 +1,77 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Logo Maker — describe it, get an SVG</title>
-  <meta name="description" content="Describe a logo in plain words and generate a clean vector logo. Download as SVG or PNG." />
+  <title>Logo Maker — describe it, get a logo</title>
+  <meta name="description" content="Describe a logo and generate three options with Gemini (nano banana) or OpenAI. Bring your own API key. Download as PNG." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='32' fill='none' stroke='%23111' stroke-width='8'/></svg>" />
-  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="app">
-    <header class="head">
-      <h1 class="logo-word">logo<span>maker</span></h1>
-      <p class="tagline">Describe a logo. Get a clean vector you can download.</p>
+  <div class="app">
+    <header class="topbar">
+      <h1 class="brand">logo<span>maker</span></h1>
+
+      <div class="settings">
+        <select id="provider" class="select" aria-label="Image provider">
+          <option value="gemini">Gemini · nano banana</option>
+          <option value="openai">OpenAI · gpt-image-1</option>
+        </select>
+        <input
+          id="api-key"
+          class="key-input"
+          type="password"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Paste your API key" />
+        <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle dark mode" title="Toggle theme">
+          <span class="theme-icon" aria-hidden="true"></span>
+        </button>
+      </div>
     </header>
 
     <form id="form" class="composer" autocomplete="off">
-      <textarea
+      <input
         id="description"
-        class="input"
-        rows="3"
-        maxlength="2000"
-        placeholder="e.g. a minimalist mountain peak inside a circle, single line, monochrome"
-        aria-label="Describe your logo"></textarea>
-      <div class="composer-row">
-        <span id="hint" class="hint">Press ⌘/Ctrl + Enter to generate</span>
-        <button id="generate" class="btn-primary" type="submit">
-          <span class="btn-label">Generate</span>
-          <span class="spinner" aria-hidden="true"></span>
-        </button>
-      </div>
+        class="prompt"
+        type="text"
+        maxlength="500"
+        placeholder="Describe your logo — e.g. a mountain peak inside a rounded hexagon, minimal, deep blue"
+        aria-label="Describe your logo" />
+      <button id="generate" class="btn-primary" type="submit">
+        <span class="btn-label">Generate</span>
+        <span class="spinner" aria-hidden="true"></span>
+      </button>
     </form>
 
-    <section id="stage" class="stage" aria-live="polite">
+    <main id="stage" class="stage" aria-live="polite">
       <div id="placeholder" class="placeholder">
         <div class="placeholder-mark"></div>
-        <p>Three logo options will appear here.</p>
+        <p>Three logo options will appear here. Add your API key, describe a logo, and generate.</p>
       </div>
+
       <div id="variants" class="variants" hidden>
         <button class="variant" type="button" data-i="0" aria-label="Select variation 1"><div class="variant-art"></div></button>
         <button class="variant" type="button" data-i="1" aria-label="Select variation 2"><div class="variant-art"></div></button>
         <button class="variant" type="button" data-i="2" aria-label="Select variation 3"><div class="variant-art"></div></button>
       </div>
+
       <p id="error" class="error" hidden></p>
-    </section>
+    </main>
 
-    <p id="pick-hint" class="pick-hint" hidden>Pick your favorite, then download.</p>
-
-    <div id="actions" class="actions" hidden>
-      <button id="download-svg" class="btn-ghost" type="button">Download SVG</button>
-      <button id="download-png" class="btn-ghost" type="button">Download PNG</button>
-      <button id="regenerate" class="btn-ghost" type="button">Regenerate</button>
+    <div class="bottom">
+      <span id="pick-hint" class="pick-hint" hidden>Pick your favorite, then download.</span>
+      <div id="actions" class="actions" hidden>
+        <button id="download-png" class="btn-ghost" type="button">Download PNG</button>
+        <button id="regenerate" class="btn-ghost" type="button">Regenerate</button>
+      </div>
+      <footer class="foot">
+        Powered by <a href="https://www.tertiaryinfotech.com/" target="_blank" rel="noopener">Tertiary Infotech Academy Pte Ltd</a>
+      </footer>
     </div>
+  </div>
 
-    <footer class="foot">
-      <p>Generated with the Claude Agent SDK · your Claude subscription</p>
-      <p>Powered by <a href="https://www.tertiaryinfotech.com/" target="_blank" rel="noopener">Tertiary Infotech Academy Pte Ltd</a></p>
-    </footer>
-  </main>
-
-  <script src="/app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

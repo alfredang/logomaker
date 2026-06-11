@@ -2,144 +2,123 @@
 
 # logomaker
 
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![JavaScript](https://img.shields.io/badge/JavaScript-Vanilla-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/docs/Web/JavaScript)
-[![Claude Agent SDK](https://img.shields.io/badge/Claude%20Agent%20SDK-subscription-D97757?logo=anthropic&logoColor=white)](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk)
+[![Static Site](https://img.shields.io/badge/Static-HTML%2FCSS%2FJS-F7DF1E?logo=javascript&logoColor=black)](#)
+[![Gemini](https://img.shields.io/badge/Gemini-nano%20banana-1a73e8?logo=googlegemini&logoColor=white)](https://ai.google.dev/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-gpt--image--1-412991?logo=openai&logoColor=white)](https://platform.openai.com/)
+[![GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-222?logo=githubpages&logoColor=white)](https://alfredang.github.io/logomaker/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](#license)
 
-**Describe a logo in plain words and get three clean vector options — pick one and download it as SVG or PNG.**
+**Describe a logo, generate three options with Gemini (nano banana) or OpenAI, pick one, and download it as PNG — all in the browser. Bring your own API key.**
 
-[Report Bug](https://github.com/alfredang/logomaker/issues) · [Request Feature](https://github.com/alfredang/logomaker/issues)
+[Live Demo](https://alfredang.github.io/logomaker/) · [Report Bug](https://github.com/alfredang/logomaker/issues) · [Request Feature](https://github.com/alfredang/logomaker/issues)
 
 </div>
 
 ## Screenshot
 
-![Screenshot](screenshot.png)
+| Light | Dark |
+|-------|------|
+| ![Screenshot — light](screenshot.png) | ![Screenshot — dark](screenshot-dark.png) |
 
 ## About
 
-**logomaker** is a modern, minimalist web tool for generating logos from a text description. Type what you want, and Claude designs **three distinct vector logos** that stream in and draw live in front of you. Pick your favorite and download it as a scalable **SVG** or a 1024×1024 **PNG**.
+**logomaker** is a zero‑backend web app for generating logos from a text description. Type what you want, and it asks an image model for **three logo options** that appear side by side. Pick your favorite and download it as a **PNG**.
 
-It is built on the **Claude Agent SDK** and authenticates with your **Claude subscription** (via the logged‑in `claude` CLI) — **no API key required**. Claude writes the logo as self‑contained SVG markup, so every result is crisp at any size.
+It runs entirely in the browser as a static site and uses **your own API key** — choose **Google Gemini 2.5 Flash Image ("nano banana")** or **OpenAI `gpt-image-1`**. Your key is stored only in your browser (`localStorage`) and is sent directly to the provider you select; there is no server in between.
 
 ### Features
 
 - **Describe → design** — generate a logo from a single plain‑language prompt.
-- **Three variations per request** — distinct directions to choose from, generated in parallel.
-- **Watch it draw** — each variant's SVG streams in and renders progressively as it's generated.
-- **Pick and download** — select any variant, then export as **SVG** (vector) or **PNG** (1024×1024).
-- **Subscription auth** — uses the Claude Agent SDK with your Claude subscription; no API key, nothing to configure.
-- **Zero‑dependency frontend** — pure HTML/CSS/JavaScript, no framework, no build step.
+- **Three options per request** — distinct directions, generated in parallel.
+- **Bring your own key** — Gemini (nano banana) or OpenAI; the key lives only in your browser.
+- **Pick & download** — select any option, download it as a PNG (1024 px).
+- **Dark / light theme** — one‑click toggle, remembers your choice.
+- **Full‑width, single‑view UI** — fits one screen, no page scroll.
+- **No backend, no build** — pure HTML/CSS/JS, deployed on GitHub Pages.
 
 ## Tech Stack
 
 | Category | Technology |
 |----------|------------|
 | Frontend | HTML, CSS, vanilla JavaScript (no framework, no build) |
-| Backend | Node.js (built‑in `http` server, no Express) |
-| AI / LLM | [Claude Agent SDK](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk) (`claude-opus`/`sonnet` via subscription) |
-| Streaming | NDJSON over a streamed HTTP response (token‑level deltas) |
-| Output | SVG (vector) · PNG (client‑side `<canvas>` render) |
+| Image model | [Google Gemini 2.5 Flash Image](https://ai.google.dev/) ("nano banana") · [OpenAI `gpt-image-1`](https://platform.openai.com/docs/guides/images) |
+| Auth | User‑supplied API key, stored in `localStorage`, called directly from the browser |
+| Hosting | GitHub Pages (deployed via GitHub Actions) |
 
 ## Architecture
 
 ```
-┌───────────────────────────────────────────────────────────┐
-│  Browser  (pure HTML / CSS / JS — no framework, no build)  │
-│                                                            │
-│   describe ──▶ POST /api/generate ──▶ read NDJSON stream   │
-│   3 variant tiles draw progressively  ◀── {delta,i,text}   │
-│   pick one ──▶ download SVG / PNG (canvas)  ◀── {done,i,svg}│
-└───────────────────────────┬───────────────────────────────┘
-                            │  HTTP (localhost)
-┌───────────────────────────▼───────────────────────────────┐
-│  Node server  (server.js)                                  │
-│   • serves /public  • POST /api/generate                   │
-│   • runs 3 query() calls in parallel, streams NDJSON       │
-└───────────────────────────┬───────────────────────────────┘
-                            │  Claude Agent SDK  (query)
-┌───────────────────────────▼───────────────────────────────┐
-│  Claude  (via the logged‑in `claude` CLI — subscription)   │
-│   returns one self‑contained <svg> per variation           │
-└────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  Browser  (static HTML / CSS / JS on GitHub Pages)           │
+│                                                              │
+│   describe + API key                                         │
+│        │                                                     │
+│        ├── 3 parallel image requests ──▶  Gemini  (nano banana)  │
+│        │                              └─▶  OpenAI (gpt-image-1)   │
+│        │                                                     │
+│   3 option tiles ◀── PNG images ───────────────────────────  │
+│   pick one ──▶ download PNG                                   │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-> A small Node server is required: the Claude Agent SDK runs in Node and authenticates with your subscription — neither can run in a browser, and a browser can't safely hold credentials. All AI/auth logic stays server‑side; the frontend stays dependency‑free.
+> There is **no server**. The browser calls the image API directly with the key you paste in. This is why it can be hosted as a fully static site on GitHub Pages.
 
 ## Project Structure
 
 ```
 logomaker/
-├── server.js          # Node http server: static files + POST /api/generate (streams NDJSON)
 ├── public/
-│   ├── index.html     # minimalist UI: prompt, 3 variant tiles, downloads
-│   ├── style.css      # clean, responsive, system-font design
-│   └── app.js         # vanilla JS: stream reader, progressive SVG render, SVG/PNG export
-├── package.json
+│   ├── index.html     # full-width, single-viewport UI: provider+key, theme toggle, 3 tiles
+│   ├── style.css      # light/dark themes, responsive layout
+│   └── app.js         # client-side Gemini/OpenAI image generation, key storage, PNG download
+├── .github/workflows/
+│   └── deploy.yml      # deploys public/ to GitHub Pages via Actions
 ├── CLAUDE.md          # project + contributor guidelines
 └── README.md
 ```
 
 ## Getting Started
 
-### Prerequisites
+### Use the live site
 
-- **Node.js 18+** (developed on Node 22).
-- The **`claude` CLI** installed and **logged in** to your Claude subscription. The Agent SDK reuses that login automatically — no API key needed.
+1. Open **[the live demo](https://alfredang.github.io/logomaker/)**.
+2. Choose a provider (**Gemini · nano banana** or **OpenAI**) and paste your API key.
+   - Gemini key: [Google AI Studio](https://aistudio.google.com/app/apikey)
+   - OpenAI key: [OpenAI API keys](https://platform.openai.com/api-keys)
+3. Describe your logo, click **Generate**, pick your favorite, and **Download PNG**.
 
-### Install
+### Run locally
+
+No build step — just serve the `public/` folder with any static server:
 
 ```bash
 git clone https://github.com/alfredang/logomaker.git
-cd logomaker
-npm install
+cd logomaker/public
+python3 -m http.server 4500
+# open http://localhost:4500
 ```
 
-### Run
-
-```bash
-npm start
-```
-
-Then open **http://localhost:3000**.
-
-### Configuration
-
-| Env var      | Default  | Description                                              |
-| ------------ | -------- | -------------------------------------------------------- |
-| `PORT`       | `3000`   | Port to serve on.                                        |
-| `LOGO_MODEL` | `sonnet` | Claude model alias (`sonnet`, `opus`, `haiku`, `fable`). |
-
-Example: `LOGO_MODEL=opus PORT=8080 npm start`
-
-### Usage
-
-1. Type a description, e.g. *"a mountain peak inside a rounded hexagon, minimal monoline, deep blue"*.
-2. Click **Generate** (or press ⌘/Ctrl + Enter) and watch three options draw in.
-3. Click a tile to **select** it, then **Download SVG** or **Download PNG** — or **Regenerate** for a new set.
+> A static server (or the live site) is recommended over opening the file directly, so the browser treats it as a normal web origin.
 
 ## Deployment
 
-logomaker needs a **Node.js host where the `claude` CLI is installed and authenticated** with your subscription. Run it on any always‑on Node environment (a VM, a container, or your own machine):
+The site is deployed to **GitHub Pages via GitHub Actions** ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)). On every push to `main`, the workflow uploads `public/` and publishes it. To deploy your own fork: enable **Settings → Pages → Build and deployment → GitHub Actions**, then push to `main`.
 
-```bash
-npm install
-npm start        # honors PORT
-```
+## Notes & Limitations
 
-> **Note:** Because generation relies on the Claude Agent SDK + the local `claude` subscription login, **serverless/edge platforms (e.g. Vercel/Netlify functions) cannot run the backend** — they can't spawn the CLI or hold the subscription session. Host the Node server on a persistent runtime instead.
+- **Your key, your browser.** The API key is stored in `localStorage` and sent straight to Google/OpenAI from your browser. Use a key scoped/limited to your usage. Don't use this pattern with a shared or privileged key.
+- **CORS.** Gemini's Generative Language API supports direct browser calls. OpenAI may restrict browser‑origin requests depending on your account/region; if a request is blocked, switch to Gemini.
+- **Raster output.** Image models return PNG (raster), so downloads are PNG — not vector SVG.
+- **Model name.** The Gemini image model id is set in `app.js` (`GEMINI_MODEL`); update it there if Google renames it.
 
 ## Contributing
-
-Contributions are welcome:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/your-idea`)
 3. Commit your changes
 4. Open a Pull Request
 
-See [CLAUDE.md](CLAUDE.md) for the project's working guidelines (think before coding, simplicity first, surgical changes).
+See [CLAUDE.md](CLAUDE.md) for the project's working guidelines.
 
 ## License
 
@@ -151,7 +130,7 @@ Released under the MIT License.
 
 ## Acknowledgements
 
-- [Anthropic Claude](https://www.anthropic.com/) and the [Claude Agent SDK](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk)
+- [Google Gemini](https://ai.google.dev/) ("nano banana", Gemini 2.5 Flash Image) and [OpenAI Images](https://platform.openai.com/docs/guides/images)
 - Built with [Claude Code](https://claude.com/claude-code)
 
 <div align="center">

@@ -68,59 +68,52 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 # Project: Logo Maker
 
-A modern, minimalist web tool: the user describes a logo in plain words and the app
-generates **three** clean vector logo options to pick from, downloadable as **SVG** or
-**PNG**. Logos are produced by Claude via the **Claude Agent SDK** using the developer's
-**Claude subscription** (no API key).
+A modern, minimalist web tool: the user describes a logo and the app generates **three**
+logo options to pick from, downloadable as **PNG**. Generation runs **entirely in the
+browser** — there is **no backend**. The user brings their own API key for **Google Gemini
+2.5 Flash Image ("nano banana")** or **OpenAI `gpt-image-1`**. It deploys as a static site
+to **GitHub Pages** (via GitHub Actions).
+
+> History: this started as a Node app using the Claude Agent SDK (subscription auth) to
+> generate **SVG**. It was deliberately rewritten into a static, BYO‑key, image‑model app
+> so it could be hosted on GitHub Pages. The Node server, the Agent SDK, and SVG output are
+> gone — don't reintroduce them unless the goal changes back.
 
 ## Architecture
 
-- **Frontend** (`public/`) — pure HTML/CSS/JavaScript, no frameworks, no build step.
-  - `index.html` — single-column minimalist UI: description textarea, Generate button,
-    square preview stage, and SVG/PNG/Regenerate actions.
-  - `style.css` — neutral palette, system font stack, generous whitespace, responsive.
-    Note: `[hidden] { display: none !important; }` is required because `.placeholder`,
-    `.preview`, and `.actions` set an explicit `display`, which otherwise overrides the
-    `hidden` attribute.
-  - `app.js` — vanilla JS: POSTs to `/api/generate`, reads the streamed response, and
-    renders **three variant tiles progressively as they generate** ("watch them draw").
-    The user clicks a tile to select it (first to finish is auto-selected); the selected
-    variant is what the download buttons export. Then handles downloads. PNG is rendered client-side by drawing the SVG onto a 1024×1024 `<canvas>`
-    (with a white background) and calling `canvas.toBlob`. `renderPartial` +
-    `closeOpenTags` make a still-streaming SVG well-formed (drop the half-written trailing
-    tag, close open elements) and validate via `DOMParser` before injecting — bad frames
-    are skipped, so worst case the logo just appears at the end.
-- **Backend** (`server.js`) — a tiny Node `http` server (no Express). Serves `public/`
-  and exposes `POST /api/generate`, which runs `VARIANTS` (3) `query()` calls **in
-  parallel** and **streams newline-delimited JSON (NDJSON)** frames tagged by variant
-  index `i`: `{type:"delta",i,text}` … `{type:"done",i,svg}` (or `{type:"error",i,error}`).
-  Each variant gets a light per-variant prompt nudge so the three read as distinct directions.
-  - A Node server is necessary because the Agent SDK runs in Node and authenticates with
-    the Claude subscription; the browser can do neither safely. Keep the frontend
-    dependency-free — all SDK/auth logic stays server-side.
+- **Static frontend** (`public/`) — pure HTML/CSS/JavaScript, no framework, no build step.
+  - `index.html` — full‑width, single‑viewport (`100vh`, no page scroll) UI: a top bar with
+    brand + provider `<select>` + API‑key input + theme toggle; a prompt row; three result
+    tiles; a bottom bar with the pick hint, download, and footer credit.
+  - `style.css` — light/dark themes via CSS variables on `[data-theme]`. `[hidden] { display:
+    none !important; }` is required because several toggled elements set an explicit `display`.
+  - `app.js` — calls the image API **directly from the browser** with the user's key.
+    Generates **3 variations in parallel** (`generateGemini` / `generateOpenAI`), renders each
+    as an `<img>` tile, auto‑selects the first to finish, lets the user click to re‑select, and
+    downloads the selected image as PNG. Also handles theme + key/provider persistence.
+- **No backend.** The browser → provider call is what makes the fully static GitHub Pages
+  hosting possible.
 
 ## Key conventions
 
-- **SDK call:** `query()` runs with `tools: []` (pure text generation, no filesystem/bash),
-  `maxTurns: 1`, `thinking: { type: "disabled" }` (a logo needs no extended reasoning —
-  cuts latency), `includePartialMessages: true` (emit token deltas for streaming),
-  `settingSources: []` (don't load this CLAUDE.md/settings into the model), and a system
-  prompt that forces a single self-contained SVG with `viewBox="0 0 512 512"`, no external
-  fonts/images/scripts. The SVG is extracted with `/<svg[\s\S]*?<\/svg>/i`.
-- **Auth:** the SDK reuses the logged-in `claude` CLI subscription automatically — no API
-  key, nothing to configure.
-- **Config:** `PORT` (default `3000`), `LOGO_MODEL` (default `sonnet`; `opus` for higher
-  quality at more latency).
-- **Run:** `npm install` then `npm start`. Generation takes ~30–80s per logo, but the SVG
-  now streams in and draws progressively, so there's continuous visual feedback rather than
-  a long static wait.
+- **Providers:** Gemini is the default and the CORS‑friendly path. Gemini endpoint:
+  `generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=…`
+  with `generationConfig.responseModalities: ["TEXT","IMAGE"]`; the image comes back as a
+  part with `inlineData` (base64). `GEMINI_MODEL` is a constant in `app.js` — update it if
+  Google renames the model. OpenAI uses `POST /v1/images/generations` (`gpt-image-1`,
+  `b64_json`) and may be CORS‑blocked from the browser.
+- **Keys/state in `localStorage`:** `logomaker_provider`, `logomaker_key_gemini`,
+  `logomaker_key_openai`, `logomaker_theme`. The key is sent straight to the provider — never
+  put a shared/privileged key in this app, and never add a server that proxies it.
+- **Output is raster PNG** (image models don't return vector SVG).
+- **Run locally:** serve `public/` statically (`cd public && python3 -m http.server 4500`).
+- **Deploy:** `.github/workflows/deploy.yml` uploads `public/` to GitHub Pages on push to
+  `main`. Asset paths in `index.html` are **relative** (`style.css`, `app.js`) so the site
+  works under the `/logomaker/` project‑pages base path.
 
 ## Working on this app
 
-- Keep the frontend pure HTML/CSS/JS — do not add a frontend framework or build step.
-- Keep dependencies minimal (currently only `@anthropic-ai/claude-agent-sdk`); prefer Node
-  built-ins over adding packages.
-- Don't introduce API keys or move generation into the browser — subscription auth must
-  stay server-side.
-- When testing generation end-to-end, expect ~30–80s latency and that it consumes
-  real Claude subscription quota.
+- Keep it a pure static site — no framework, no build step, no backend, no npm dependencies.
+- Don't reintroduce a server or proxy the API key; BYO‑key client‑side is the design.
+- Generation can't be tested without a real Gemini/OpenAI key. UI, theme, key persistence,
+  layout, and the no‑key guard are testable without one.
