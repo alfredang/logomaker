@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Logo Maker — describe it, get an SVG</title>
+  <meta name="description" content="Describe a logo in plain words and generate a clean vector logo. Download as SVG or PNG." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='32' fill='none' stroke='%23111' stroke-width='8'/></svg>" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="head">
+      <h1 class="logo-word">logo<span>maker</span></h1>
+      <p class="tagline">Describe a logo. Get a clean vector you can download.</p>
+    </header>
+
+    <form id="form" class="composer" autocomplete="off">
+      <textarea
+        id="description"
+        class="input"
+        rows="3"
+        maxlength="2000"
+        placeholder="e.g. a minimalist mountain peak inside a circle, single line, monochrome"
+        aria-label="Describe your logo"></textarea>
+      <div class="composer-row">
+        <span id="hint" class="hint">Press ⌘/Ctrl + Enter to generate</span>
+        <button id="generate" class="btn-primary" type="submit">
+          <span class="btn-label">Generate</span>
+          <span class="spinner" aria-hidden="true"></span>
+        </button>
+      </div>
+    </form>
+
+    <section id="stage" class="stage" aria-live="polite">
+      <div id="placeholder" class="placeholder">
+        <div class="placeholder-mark"></div>
+        <p>Three logo options will appear here.</p>
+      </div>
+      <div id="variants" class="variants" hidden>
+        <button class="variant" type="button" data-i="0" aria-label="Select variation 1"><div class="variant-art"></div></button>
+        <button class="variant" type="button" data-i="1" aria-label="Select variation 2"><div class="variant-art"></div></button>
+        <button class="variant" type="button" data-i="2" aria-label="Select variation 3"><div class="variant-art"></div></button>
+      </div>
+      <p id="error" class="error" hidden></p>
+    </section>
+
+    <p id="pick-hint" class="pick-hint" hidden>Pick your favorite, then download.</p>
+
+    <div id="actions" class="actions" hidden>
+      <button id="download-svg" class="btn-ghost" type="button">Download SVG</button>
+      <button id="download-png" class="btn-ghost" type="button">Download PNG</button>
+      <button id="regenerate" class="btn-ghost" type="button">Regenerate</button>
+    </div>
+
+    <footer class="foot">
+      <p>Generated with the Claude Agent SDK · your Claude subscription</p>
+      <p>Powered by <a href="https://www.tertiaryinfotech.com/" target="_blank" rel="noopener">Tertiary Infotech Academy Pte Ltd</a></p>
+    </footer>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
