@@ -81,7 +81,7 @@ function resetStage() {
   pickHint.hidden = true;
   variantsEl.hidden = false;
   tiles.forEach((t) => t.classList.remove("selected", "failed"));
-  arts.forEach((a) => (a.innerHTML = ""));
+  arts.forEach((a) => { a.innerHTML = ""; a.classList.remove("has-image"); });
 }
 
 function setSelected(i) {
@@ -101,8 +101,10 @@ function buildPrompt(description, variant) {
   return (
     `A minimalist, modern brand logo of: ${description}. ` +
     `${VARIANT_HINTS[variant] || ""} ` +
-    `Flat vector-style design, simple shapes, a small cohesive color palette, strong contrast, ` +
-    `centered on a plain solid background, no extra text or watermark. Make it distinct from other variations.`
+    `Flat vector-style design, simple shapes, a small cohesive color palette, strong contrast. ` +
+    `The logo must be fully isolated and centered on a plain pure-white (#FFFFFF) background with ` +
+    `generous empty margin around it, no drop shadow, no scene or photo background, no extra text or watermark. ` +
+    `Make it distinct from other variations.`
   );
 }
 
@@ -140,7 +142,14 @@ async function generateOpenAI(prompt, key) {
   const res = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-    body: JSON.stringify({ model: "gpt-image-1", prompt, n: 1, size: "1024x1024" }),
+    body: JSON.stringify({
+      model: "gpt-image-1",
+      prompt,
+      n: 1,
+      size: "1024x1024",
+      background: "transparent",
+      output_format: "png",
+    }),
   });
   if (!res.ok) throw new Error(await errorMessage(res));
   const data = await res.json();
@@ -153,6 +162,99 @@ async function generateOpenAI(prompt, key) {
 
 function generateOne(prompt, provider, key) {
   return provider === "openai" ? generateOpenAI(prompt, key) : generateGemini(prompt, key);
+}
+
+// ---- Image post-processing: transparent background + crop to the logo ----
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    if (/^https?:/i.test(src)) img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+// Flood-fill from the borders, turning the (roughly uniform) background transparent.
+// Interior pixels of the same color are preserved because they aren't connected to an edge.
+function removeBackground(data, width, height) {
+  const idx = (x, y) => (y * width + x) * 4;
+  const corners = [idx(0, 0), idx(width - 1, 0), idx(0, height - 1), idx(width - 1, height - 1)];
+  // Already transparent (e.g. OpenAI native transparent background)? Leave it.
+  if (corners.every((i) => data[i + 3] < 16)) return;
+
+  let r = 0, g = 0, b = 0;
+  for (const i of corners) { r += data[i]; g += data[i + 1]; b += data[i + 2]; }
+  r /= 4; g /= 4; b /= 4;
+
+  const TOL_IN = 45, TOL_OUT = 95;
+  const inTol2 = TOL_IN * TOL_IN, outTol2 = TOL_OUT * TOL_OUT;
+  const visited = new Uint8Array(width * height);
+  const stack = [];
+  for (let x = 0; x < width; x++) stack.push(x, 0, x, height - 1);
+  for (let y = 0; y < height; y++) stack.push(0, y, width - 1, y);
+
+  while (stack.length) {
+    const y = stack.pop(), x = stack.pop();
+    if (x < 0 || y < 0 || x >= width || y >= height) continue;
+    const p = y * width + x;
+    if (visited[p]) continue;
+    visited[p] = 1;
+    const i = p * 4;
+    const dr = data[i] - r, dg = data[i + 1] - g, db = data[i + 2] - b;
+    const dist2 = dr * dr + dg * dg + db * db;
+    if (dist2 > outTol2) continue; // logo boundary — keep pixel, stop flooding
+    if (dist2 <= inTol2) {
+      data[i + 3] = 0;
+    } else {
+      const t = (Math.sqrt(dist2) - TOL_IN) / (TOL_OUT - TOL_IN); // soft edge
+      data[i + 3] = Math.min(data[i + 3], Math.round(255 * t));
+    }
+    stack.push(x + 1, y, x - 1, y, x, y + 1, x, y - 1);
+  }
+}
+
+// Bounding box of pixels with meaningful opacity.
+function opaqueBounds(data, width, height) {
+  let minX = width, minY = height, maxX = -1, maxY = -1;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (data[(y * width + x) * 4 + 3] > 16) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (maxX < 0) return null;
+  return { minX, minY, maxX, maxY };
+}
+
+// Make the background transparent and crop tightly to the logo (with a small margin).
+async function processImage(src) {
+  const img = await loadImage(src);
+  const w = img.naturalWidth, h = img.naturalHeight;
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+
+  const imageData = ctx.getImageData(0, 0, w, h);
+  removeBackground(imageData.data, w, h);
+  ctx.putImageData(imageData, 0, 0);
+
+  const box = opaqueBounds(imageData.data, w, h);
+  if (!box) return c.toDataURL("image/png"); // nothing to crop to
+
+  const bw = box.maxX - box.minX + 1;
+  const bh = box.maxY - box.minY + 1;
+  const pad = Math.max(4, Math.round(Math.max(bw, bh) * 0.04)); // small breathing room
+  const out = document.createElement("canvas");
+  out.width = bw + pad * 2;
+  out.height = bh + pad * 2;
+  out.getContext("2d").drawImage(c, box.minX, box.minY, bw, bh, pad, pad, bw, bh);
+  return out.toDataURL("image/png");
 }
 
 // ---- Generate (3 variations in parallel) ----
@@ -178,9 +280,12 @@ async function generate() {
   await Promise.all(
     Array.from({ length: TILES }, (_, i) =>
       generateOne(buildPrompt(description, i), provider, key)
-        .then((src) => {
-          variants[i] = src;
-          arts[i].innerHTML = `<img alt="logo variation ${i + 1}" src="${src}">`;
+        .then(async (src) => {
+          // Transparent background + crop to the logo (falls back to raw image on failure).
+          const out = await processImage(src).catch(() => src);
+          variants[i] = out;
+          arts[i].innerHTML = `<img alt="logo variation ${i + 1}" src="${out}">`;
+          arts[i].classList.add("has-image");
           succeeded++;
           if (selected === -1) setSelected(i); // auto-select the first ready variant
           pickHint.hidden = false;

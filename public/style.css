@@ -8,6 +8,7 @@
   --accent-ink: #ffffff;
   --danger: #b4341f;
   --tile-bg: #ffffff;
+  --checker: rgba(0, 0, 0, 0.06);
   --shadow: 0 1px 2px rgba(20, 20, 25, 0.04), 0 10px 28px rgba(20, 20, 25, 0.06);
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -22,6 +23,7 @@
   --accent-ink: #16161a;
   --danger: #ff7a66;
   --tile-bg: #1c1d21;
+  --checker: rgba(255, 255, 255, 0.05);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.45);
 }
 
@@ -222,6 +224,16 @@ body {
 .variant.failed { cursor: default; border-style: dashed; }
 
 .variant-art { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+/* Checkerboard behind transparent logos so the transparency is visible. */
+.variant-art.has-image {
+  background-color: var(--tile-bg);
+  background-image:
+    linear-gradient(45deg, var(--checker) 25%, transparent 25%, transparent 75%, var(--checker) 75%),
+    linear-gradient(45deg, var(--checker) 25%, transparent 25%, transparent 75%, var(--checker) 75%);
+  background-size: 18px 18px;
+  background-position: 0 0, 9px 9px;
+  border-radius: 8px;
+}
 .variant-art img {
   max-width: 100%;
   max-height: 100%;

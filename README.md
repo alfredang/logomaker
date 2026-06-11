@@ -41,7 +41,7 @@ It runs entirely in the browser as a static site and uses **your own API key** �
 - **Describe → design** — generate a logo from a single plain‑language prompt.
 - **Three options per request** — distinct directions, generated in parallel.
 - **Bring your own key** — Gemini (nano banana) or OpenAI; the key lives only in your browser.
-- **Pick & download** — select any option, download it as a PNG (1024 px).
+- **Pick & download** — select any option and download it as a **transparent PNG, cropped to the logo** (background removed, no square padding).
 - **Dark / light theme** — one‑click toggle, remembers your choice.
 - **Full‑width, single‑view UI** — fits one screen, no page scroll.
 - **No backend, no build** — pure HTML/CSS/JS, deployed on GitHub Pages.
@@ -119,6 +119,7 @@ The site is deployed to **GitHub Pages via GitHub Actions** ([`.github/workflows
 - **Your key, your browser.** The API key is stored in `localStorage` and sent straight to Google/OpenAI from your browser. Use a key scoped/limited to your usage. Don't use this pattern with a shared or privileged key.
 - **CORS.** Gemini's Generative Language API supports direct browser calls. OpenAI may restrict browser‑origin requests depending on your account/region; if a request is blocked, switch to Gemini.
 - **Raster output.** Image models return PNG (raster), so downloads are PNG — not vector SVG.
+- **Transparent + cropped.** The app removes the (uniform) background in‑browser via edge flood‑fill and crops to the logo's bounding box. This works best when the logo sits on a plain background with margin (which the prompt requests); textured or gradient backgrounds may not key out cleanly.
 - **Model name.** The Gemini image model id is set in `app.js` (`GEMINI_MODEL`); update it there if Google renames it.
 
 ## Contributing
