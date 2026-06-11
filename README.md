@@ -20,6 +20,16 @@
 |-------|------|
 | ![Screenshot — light](screenshot.png) | ![Screenshot — dark](screenshot-dark.png) |
 
+## Example
+
+Prompt: **"finance consultant"** — three options generated with Gemini (nano banana):
+
+| Option 1 | Option 2 | Option 3 |
+|:--------:|:--------:|:--------:|
+| <img src="samples/finance-consultant-1.png" width="240" alt="finance consultant logo 1"> | <img src="samples/finance-consultant-2.png" width="240" alt="finance consultant logo 2"> | <img src="samples/finance-consultant-3.png" width="240" alt="finance consultant logo 3"> |
+
+Pick one and download it as a PNG.
+
 ## About
 
 **logomaker** is a zero‑backend web app for generating logos from a text description. Type what you want, and it asks an image model for **three logo options** that appear side by side. Pick your favorite and download it as a **PNG**.
